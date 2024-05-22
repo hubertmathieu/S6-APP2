@@ -1,4 +1,5 @@
 #include "light_sensor.h"
+#include <Arduino.h>
 
 /*
  * Read analog from light sensor and returns luminosity in lux

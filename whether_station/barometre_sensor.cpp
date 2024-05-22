@@ -1,4 +1,8 @@
 #include "barometre_sensor.h"
+#include <Wire.h>
+#include <math.h>
+#include <stdint.h>
+#include <Arduino.h>
 
 double tmp_sc = 0;
 
@@ -126,9 +130,6 @@ double get_pressure() {
   int64_t c0010 = read(5, C00);
   int c00 = to_signed(c0010 >> 20, 20);
   int c10 = bitExtracted(c0010, 20, 0);
-
-  print_byte(c10);
-  Serial.println(c10);
 
   if (c10 > pow(2, 19) - 1) {
     c10 = c10 - pow(2, 20);

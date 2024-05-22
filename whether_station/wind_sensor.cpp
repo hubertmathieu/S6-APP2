@@ -1,4 +1,5 @@
 #include "wind_sensor.h"
+#include <Arduino.h>
 
 int wind_ticks = 0;
 

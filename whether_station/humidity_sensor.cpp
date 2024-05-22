@@ -1,4 +1,5 @@
 #include "humidity_sensor.h"
+#include <Arduino.h>
 
 /*
 */
