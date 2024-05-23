@@ -1,8 +1,10 @@
+// Hubert Mathieu, math0701
+// Antoine Hébert, heba0801
+// May 2024
+
 #include "humidity_sensor.h"
 #include <Arduino.h>
 
-/*
-*/
 float get_humidity() {
   int i, j;
   int duree[42];

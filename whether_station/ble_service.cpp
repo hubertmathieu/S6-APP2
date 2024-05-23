@@ -1,3 +1,7 @@
+// Hubert Mathieu, math0701
+// Antoine Hébert, heba0801
+// May 2024
+
 #include "ble_service.h"
 #include <Arduino.h>
 #include <BLEDevice.h>
@@ -5,153 +9,126 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
-BLEServer* pServer = NULL;
-BLECharacteristic* pCharHUM = NULL;
-BLECharacteristic* pCharTEMP    = NULL;
-BLECharacteristic* pCharPRS     = NULL;
-BLECharacteristic* pCharLUM     = NULL;
-BLECharacteristic* pCharWS      = NULL;
-BLECharacteristic* pCharWD      = NULL;
-BLECharacteristic* pCharRain    = NULL;
+BLEServer* server;
+BLECharacteristic* char_hum;
+BLECharacteristic* char_temp;
+BLECharacteristic* char_prs;
+BLECharacteristic* char_lum;
+BLECharacteristic* char_wd_sp;
+BLECharacteristic* char_wd_dir;
+BLECharacteristic* char_rain;
 BLEDescriptor *pDescr;
-BLE2902 *pBLE2902;
-BLE2902 *pBLE2902_2;
-BLE2902 *pBLE2902_3;
-BLE2902 *pBLE2902_4;
-BLE2902 *pBLE2902_5;
-BLE2902 *pBLE2902_6;
-BLE2902 *pBLE2902_7;
+BLE2902 *desc_hum;
+BLE2902 *desc_temp;
+BLE2902 *desc_pres;
+BLE2902 *desc_lum;
+BLE2902 *desc_wd_sp;
+BLE2902 *desc_wd_dir;
+BLE2902 *desc_rain;
 
+// keep track of client connection
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 
-class MyServerCallbacks: public BLEServerCallbacks {
-    void onConnect(BLEServer* pServer) {
+// overide server functions
+class ServerCallback: public BLEServerCallbacks {
+    void onConnect(BLEServer* server) {
       deviceConnected = true;
     };
 
-    void onDisconnect(BLEServer* pServer) {
+    void onDisconnect(BLEServer* server) {
       deviceConnected = false;
     }
 };
 
+// creating ble server
 void init_ble() {
-  // Create the BLE Device
+  // device global parameters
   BLEDevice::init("ESP32");
 
-  // Create the BLE Server
-  pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new MyServerCallbacks());
+  server = BLEDevice::createServer();
+  server->setCallbacks(new ServerCallback());
 
-  // Create the BLE Service
-  BLEService *pService = pServer->createService(BLEUUID(SERVICE_UUID), 40);
+  BLEService *service = server->createService(BLEUUID(SERVICE_UUID), 40);
 
-  // Create a BLE Characteristic
-  pCharHUM = pService->createCharacteristic(
-                      HUM_UUID,
-                      BLECharacteristic::PROPERTY_NOTIFY
-                    );
-  pCharTEMP = pService->createCharacteristic(
-                    TEMP_UUID,
-                    BLECharacteristic::PROPERTY_NOTIFY
-                  );
-  pCharPRS  = pService->createCharacteristic(
-                      PRS_UUID,
-                      BLECharacteristic::PROPERTY_NOTIFY
-                    );
-  pCharLUM  = pService->createCharacteristic(
-                      LUM_UUID,
-                      BLECharacteristic::PROPERTY_NOTIFY
-                    );
-  pCharWS   = pService->createCharacteristic(
-                      WS_UUID,
-                      BLECharacteristic::PROPERTY_NOTIFY
-                    );
-  pCharWD   = pService->createCharacteristic(
-                      WD_UUID,
-                      BLECharacteristic::PROPERTY_NOTIFY
-                    );
-  pCharRain = pService->createCharacteristic(
-                      RAIN_UUID,
-                      BLECharacteristic::PROPERTY_NOTIFY
-                    );                 
-
-  // Create a BLE Descriptor
+  // existing characteritics for the weather station
+  char_hum = service->createCharacteristic(HUM_UUID, BLECharacteristic::PROPERTY_NOTIFY);
+  char_temp = service->createCharacteristic(TEMP_UUID, BLECharacteristic::PROPERTY_NOTIFY);
+  char_prs  = service->createCharacteristic(PRS_UUID, BLECharacteristic::PROPERTY_NOTIFY);
+  char_lum  = service->createCharacteristic(LUM_UUID, BLECharacteristic::PROPERTY_NOTIFY);
+  char_wd_sp   = service->createCharacteristic(WS_UUID, BLECharacteristic::PROPERTY_NOTIFY);
+  char_wd_dir   = service->createCharacteristic(WD_UUID, BLECharacteristic::PROPERTY_NOTIFY);
+  char_rain = service->createCharacteristic(RAIN_UUID, BLECharacteristic::PROPERTY_NOTIFY);                 
   
-  // pDescr = new BLEDescriptor((uint16_t)0x2901);
-  // pDescr->setValue("A very interesting variable");
-  // pCharHUM->addDescriptor(pDescr);
-  
-  pBLE2902 = new BLE2902();
-  pBLE2902->setNotifications(true);
+  // creating descriptors for each char.
+  desc_hum = new BLE2902();
+  desc_hum->setNotifications(true);
+  char_hum->addDescriptor(desc_hum);
 
-  pBLE2902_2 = new BLE2902();
-  pBLE2902_2->setNotifications(true);
+  desc_temp = new BLE2902();
+  desc_temp->setNotifications(true);
+  char_temp->addDescriptor(desc_temp);
 
-  pBLE2902_3 = new BLE2902();
-  pBLE2902_3->setNotifications(true);
+  desc_pres = new BLE2902();
+  desc_pres->setNotifications(true);
+  char_prs->addDescriptor(desc_pres);
 
-  pBLE2902_4 = new BLE2902();
-  pBLE2902_4->setNotifications(true);
+  desc_lum = new BLE2902();
+  desc_lum->setNotifications(true);
+  char_lum->addDescriptor(desc_lum);
 
-  pBLE2902_5 = new BLE2902();
-  pBLE2902_5->setNotifications(true);
+  desc_wd_sp = new BLE2902();
+  desc_wd_sp->setNotifications(true);
+  char_wd_sp->addDescriptor(desc_wd_sp);
 
-  pBLE2902_6 = new BLE2902();
-  pBLE2902_6->setNotifications(true);
+  desc_wd_dir = new BLE2902();
+  desc_wd_dir->setNotifications(true);
+  char_wd_dir->addDescriptor(desc_wd_dir);
 
-  pBLE2902_7 = new BLE2902();
-  pBLE2902_7->setNotifications(true);
+  desc_rain = new BLE2902();
+  desc_rain->setNotifications(true);
+  char_rain->addDescriptor(desc_rain);
 
-  pCharHUM->addDescriptor(pBLE2902);
-  pCharTEMP->addDescriptor(pBLE2902_2);
-  pCharPRS  ->addDescriptor(pBLE2902_3);
-  pCharLUM  ->addDescriptor(pBLE2902_4);
-  pCharWS   ->addDescriptor(pBLE2902_5);
-  pCharWD   ->addDescriptor(pBLE2902_6);
-  pCharRain ->addDescriptor(pBLE2902_7);
+  service->start();
 
-  // Start the service
-  pService->start();
-
-  // Start advertising
+  // display on network
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
   pAdvertising->addServiceUUID(SERVICE_UUID);
   pAdvertising->setScanResponse(false);
-  pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
+  pAdvertising->setMinPreferred(0x0);
   BLEDevice::startAdvertising();
-  Serial.println("Waiting a client connection to notify...");
+  Serial.println("Waiting for a client connection...");
 }
 
 void send_data_to_base_station(float humidity, float luminosity, float pressure, float temperature, char* wind_direction, float wind_speed, float rain_accumulation) {
-    // notify changed value
-    if (deviceConnected) {
-        pCharHUM->setValue(humidity);
-        pCharPRS  ->setValue(pressure);
-        pCharLUM  ->setValue(luminosity);
-        pCharWS   ->setValue(wind_speed);
-        pCharWD   ->setValue(wind_direction);
-        pCharRain ->setValue(rain_accumulation);
-        pCharTEMP->setValue(temperature);
+  // if not connected => advertise on the network for connection
+  if (!deviceConnected && oldDeviceConnected) {
+    delay(500);
+    server->startAdvertising();
+    Serial.println("start advertising");
+    oldDeviceConnected = deviceConnected;
+  }
 
-        pCharHUM->notify();
-        pCharTEMP->notify();
-        pCharPRS  ->notify();
-        pCharLUM  ->notify();
-        pCharWS   ->notify();
-        pCharWD   ->notify();
-        pCharRain ->notify();
-    }
-    // disconnecting
-    if (!deviceConnected && oldDeviceConnected) {
-        delay(500); // give the bluetooth stack the chance to get things ready
-        pServer->startAdvertising(); // restart advertising
-        Serial.println("start advertising");
-        oldDeviceConnected = deviceConnected;
-    }
-    // connecting
-    if (deviceConnected && !oldDeviceConnected) {
-        // do stuff here on connecting
-        oldDeviceConnected = deviceConnected;
-    }
+  if (deviceConnected && !oldDeviceConnected) {
+    oldDeviceConnected = deviceConnected;
+  }
+
+  if (deviceConnected) {
+    char_hum->setValue(humidity);
+    char_prs->setValue(pressure);
+    char_lum->setValue(luminosity);
+    char_wd_sp->setValue(wind_speed);
+    char_wd_dir->setValue(wind_direction);
+    char_rain->setValue(rain_accumulation);
+    char_temp->setValue(temperature);
+
+    // the client char. callbacks will be called on notify
+    char_hum->notify();
+    char_temp->notify();
+    char_prs->notify();
+    char_lum->notify();
+    char_wd_sp->notify();
+    char_wd_dir->notify();
+    char_rain ->notify();
+  }
 }

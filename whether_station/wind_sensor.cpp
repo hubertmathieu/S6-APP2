@@ -1,18 +1,25 @@
+// Hubert Mathieu, math0701
+// Antoine Hébert, heba0801
+// May 2024
+
 #include "wind_sensor.h"
 #include <Arduino.h>
 
 int wind_ticks = 0;
 
+// called by the interupt
 void increment_wind_tick() {
     wind_ticks++; 
 }
 
+// function to get the wind speed of the last second
 float get_wind_speed() {
     float wind_speed = WIND_SPEED_KMH * wind_ticks;
     wind_ticks = 0;
     return wind_speed;
 }
 
+// converting voltage to cardinal direction
 char* get_wind_direction() {
     int analog_value = analogRead(WIND_DIR_PIN);
    

@@ -1,3 +1,8 @@
+
+// Hubert Mathieu, math0701
+// Antoine Hébert, heba0801
+// May 2024
+
 #ifndef HUMIDITY_SENSOR_H
 #define HUMIDITY_SENSOR_H
 

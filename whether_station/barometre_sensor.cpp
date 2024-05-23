@@ -1,3 +1,7 @@
+// Hubert Mathieu, math0701
+// Antoine Hébert, heba0801
+// May 2024
+
 #include "barometre_sensor.h"
 #include <Wire.h>
 #include <math.h>
@@ -6,6 +10,7 @@
 
 double tmp_sc = 0;
 
+// printing bits
 void bin(unsigned n) {
   if (n > 1)
     bin(n / 2);
@@ -13,7 +18,8 @@ void bin(unsigned n) {
   Serial.print(n % 2);
 }
 
-void print_byte(int64_t n) {
+// printing binary value of number
+void binary_print(int64_t n) {
   bin(n);
   Serial.println();
 }
@@ -24,6 +30,7 @@ int setBit(int n, int k)
     return (n | (1 << (k)));
 }
 
+// extract au range of bits in a larger bits sequence
 int bitExtracted(int64_t number, int k, int p)
 {
     return (((1 << k) - 1) & (number >> (p)));
@@ -34,6 +41,7 @@ int clearBit(int n, int k) {
     return (n & (~(1 << (k))));
 }
 
+// signed value of number by it's MSB
 int to_signed(int value, int power) {
   if (value > pow(2, power - 1) - 1) {
     return value - pow(2, power);
@@ -41,6 +49,7 @@ int to_signed(int value, int power) {
   return value;
 }
 
+// write a value to slave
 void write(int data, int add) {
   Wire.beginTransmission(SLAVE_ADD);
   Wire.write(add);
@@ -48,13 +57,16 @@ void write(int data, int add) {
   Wire.endTransmission(true);
 }
 
+// read value from salve
 int64_t read(int size, int add) {
+  // writing the register add to read
   Wire.beginTransmission(SLAVE_ADD);
   Wire.write(add);
   Wire.endTransmission(true);
 
   int64_t buffer = 0;
 
+  // read byte from the register starting add.
   Wire.requestFrom(SLAVE_ADD, size);
   while(Wire.available()) {
     int c = Wire.read();
@@ -64,6 +76,7 @@ int64_t read(int size, int add) {
   return buffer;
 }
 
+// init paramter for the temperature
 void temp_init() {
   int coef = read(1, COEF_SRCE);
   int tmp_ext = read(1, TMP_CFG);
@@ -81,6 +94,7 @@ void temp_init() {
   write(tmp_ext, TMP_CFG);
 }
 
+// init paramter for the pressure
 void prs_init() {
   int prs_ext = read(1, PRS_CFG);
 
@@ -94,7 +108,7 @@ void prs_init() {
   write(prs_ext, PRS_CFG);
 }
 
-
+// set config for the mode
 void barometre_init() {
     Wire.begin();
     // set Backgroud mode
@@ -111,9 +125,11 @@ void barometre_init() {
     prs_init();
 }
 
+
 double get_temperature() {
     int tmp_raw = read(3, TMP_B2);
 
+    // reading coeff and format them
     int coef = read(3, C0);
     int c0 = to_signed(coef >> 12, 12);
 
@@ -127,6 +143,7 @@ double get_temperature() {
 double get_pressure() {
   int prs_raw = read(3, PRS_B2);
 
+  // reading coeff and format them
   int64_t c0010 = read(5, C00);
   int c00 = to_signed(c0010 >> 20, 20);
   int c10 = bitExtracted(c0010, 20, 0);

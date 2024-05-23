@@ -1,3 +1,7 @@
+// Hubert Mathieu, math0701
+// Antoine Hébert, heba0801
+// May 2024
+
 #ifndef BLE_SERVICE_H
 #define BLE_SERVICE_H
 
